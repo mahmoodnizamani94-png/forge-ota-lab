@@ -10,11 +10,15 @@ plugins {
 }
 
 // Google Services plugin requires google-services.json. When the file is
-// missing (development builds without Firebase), disable the task instead
-// of failing the build. The app works identically without it —
+// missing (development builds without Firebase), disable all Firebase-dependent
+// tasks instead of failing the build. The app works identically without it —
 // CrashReportingManager.initialize() catches all Firebase exceptions.
 if (!file("google-services.json").exists()) {
-    tasks.matching { it.name.contains("GoogleServices") }.configureEach {
+    tasks.matching {
+        it.name.contains("GoogleServices") ||
+            it.name.contains("Crashlytics") ||
+            it.name.contains("crashlytics")
+    }.configureEach {
         enabled = false
     }
 }
