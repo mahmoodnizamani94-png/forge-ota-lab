@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Forge OTA Lab launcher icon foreground — anvil simplified as a vector -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Copper-colored anvil shape (simplified) -->
+    <path
+        android:fillColor="#D4875A"
+        android:pathData="M38,40L70,40L74,52L66,56L66,68L42,68L42,56L34,52Z" />
+    <!-- Base -->
+    <path
+        android:fillColor="#B06A3C"
+        android:pathData="M36,68L72,68L76,76L32,76Z" />
+</vector>

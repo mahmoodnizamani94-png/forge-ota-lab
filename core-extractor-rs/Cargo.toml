@@ -1,0 +1,45 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/sniff",
+    "crates/payload",
+    "crates/images",
+    "crates/filesystems",
+    "crates/verification",
+    "crates/adapters",
+    "forge-jni",
+    "corpus-gen",
+]
+
+[workspace.package]
+edition = "2024"
+rust-version = "1.85.0"
+license = "Proprietary"
+
+[workspace.dependencies]
+# Shared workspace dependencies — each crate opts in via { workspace = true }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+
+# Protobuf
+prost = "0.13"
+prost-types = "0.13"
+prost-build = "0.13"
+
+# Cryptography
+sha2 = "0.10"
+
+# Streaming decompression
+xz2 = "0.1"
+bzip2 = "0.5"
+zstd = { version = "0.13", default-features = false }
+
+# Archive scanning
+zip = { version = "2", default-features = false }
+
+[profile.release]
+lto = true
+strip = true
+opt-level = "s"
+codegen-units = 1

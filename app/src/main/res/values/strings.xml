@@ -1,0 +1,145 @@
+<resources>
+    <string name="app_name">Forge OTA Lab</string>
+
+    <!-- Home Screen -->
+    <string name="home_title">Forge OTA Lab</string>
+    <string name="home_subtitle">Android OTA Extraction Workbench</string>
+    <string name="home_empty_instruction">Select an OTA package to begin analysis</string>
+    <string name="home_empty_supported_formats">Supported Formats</string>
+    <string name="home_import_fab">Import OTA</string>
+    <string name="home_import_fab_description">Import OTA package</string>
+    <string name="home_error_history">Unable to load history. Tap to retry.</string>
+    <string name="home_retry">Retry</string>
+    <string name="home_settings_description">Settings</string>
+
+    <!-- Tier descriptions (empty state) -->
+    <string name="tier_supported_desc">Google Pixel &amp; standard payload-based full OTAs</string>
+    <string name="tier_experimental_desc">Incremental OTAs with validated base images</string>
+    <string name="tier_forensic_desc">Unknown packages — metadata inspection &amp; diagnostics</string>
+
+    <!-- Support Tier Badges -->
+    <string name="badge_supported">Supported</string>
+    <string name="badge_experimental">Experimental</string>
+    <string name="badge_forensic">Forensic</string>
+    <string name="badge_tier_description">%1$s support tier</string>
+
+    <!-- Classification Labels -->
+    <string name="classification_supported_full">Full OTA</string>
+    <string name="classification_supported_incremental">Incremental OTA</string>
+    <string name="classification_experimental">Experimental</string>
+    <string name="classification_forensic">Forensic</string>
+    <string name="classification_image_only">Standalone Image</string>
+    <string name="classification_corrupted">Corrupted</string>
+    <string name="classification_unknown">Unknown Format</string>
+
+    <!-- Import State -->
+    <string name="import_analyzing">Analyzing file…</string>
+    <string name="import_error_uri_inaccessible">Source file is no longer accessible. Select the file again.</string>
+    <string name="import_error_cannot_read">Cannot read the selected file. It may have been moved or deleted.</string>
+
+    <!-- Analysis Screen -->
+    <string name="analysis_title">Analysis</string>
+    <string name="analysis_loading">Analyzing file…</string>
+    <string name="analysis_full_ota">Full OTA</string>
+    <string name="analysis_incremental_ota">Incremental OTA</string>
+    <string name="analysis_file_size">File size</string>
+    <string name="analysis_security_patch">Security patch</string>
+    <string name="analysis_device">Device</string>
+    <string name="analysis_partitions">Partitions</string>
+    <string name="analysis_partitions_value">%1$d extractable of %2$d total</string>
+    <string name="analysis_total_extracted_size">Total extracted size</string>
+    <string name="analysis_incremental_warning">Incremental OTA — some partitions require a validated base image for reconstruction.</string>
+
+    <!-- Partition Selection -->
+    <string name="selection_quick">Quick Selection</string>
+    <string name="selection_boot_set">Boot set</string>
+    <string name="selection_system">System</string>
+    <string name="selection_all">All</string>
+    <string name="selection_clear">Clear</string>
+    <string name="selection_extract_none">Select partitions to extract</string>
+    <string name="selection_extract_count">Extract %1$d partitions</string>
+
+    <!-- Partition Categories -->
+    <string name="category_boot_critical">Boot Critical</string>
+    <string name="category_logical_system">Logical System</string>
+    <string name="category_firmware_radio">Firmware / Radio</string>
+    <string name="category_metadata">Metadata</string>
+    <string name="category_misc">Other</string>
+
+    <!-- Storage Estimate -->
+    <string name="storage_selected">%1$d selected</string>
+    <string name="storage_available">%1$s / %2$s available</string>
+    <string name="storage_insufficient">Insufficient storage: need %1$s more space. Free storage or select fewer partitions.</string>
+    <string name="storage_insufficient_description">Warning: insufficient storage. Need %1$s more space.</string>
+
+    <!-- Partition Card -->
+    <string name="partition_ops">%1$d ops</string>
+    <string name="partition_not_extractable_incremental">Requires base image (incremental operations)</string>
+
+    <!-- Forensic Mode -->
+    <string name="forensic_info">Forensic mode — metadata inspection only. Extraction is not available for this package format.</string>
+    <string name="forensic_detected_markers">Detected Format Markers</string>
+    <string name="forensic_package_family">Package family</string>
+    <string name="forensic_magic_bytes">Magic bytes</string>
+    <string name="forensic_classification">Classification</string>
+    <string name="forensic_total_partitions">Total partitions</string>
+
+    <!-- Error Detail -->
+    <string name="error_corrupted">Corrupted Package</string>
+    <string name="error_unknown_format">Unknown Format</string>
+    <string name="error_redownload">Try downloading the file again, or verify the file format.</string>
+    <string name="error_detected_magic">Detected magic bytes: %1$s</string>
+
+    <!-- Analysis Errors — exhaustive mapping from FormatError variants -->
+    <string name="error_magic_mismatch">Unrecognized file format. Expected a payload.bin or OTA ZIP archive.</string>
+    <string name="error_header_too_short">File appears truncated. The header is incomplete — re-download the file.</string>
+    <string name="error_unsupported_version">This payload version (%1$d) is not supported. Expected version 2.</string>
+    <string name="error_manifest_too_large">Manifest is too large (%1$s). Maximum allowed: 64 MB. File may be corrupted.</string>
+    <string name="error_manifest_corrupt">The package manifest is corrupted: %1$s</string>
+    <string name="error_manifest_timeout">Analysis timed out reading the manifest. The file may be on slow storage.</string>
+    <string name="error_io">File read error: %1$s</string>
+    <string name="error_no_adapter">No adapter can process this file format. Detected: %1$s</string>
+    <string name="error_analysis_failed">Analysis failed: %1$s</string>
+
+    <!-- Navigation -->
+    <string name="nav_back">Navigate back</string>
+    <string name="nav_analysis_description">View analysis details for %1$s</string>
+
+    <!-- Placeholder Screens -->
+    <string name="placeholder_coming_soon">Coming in a future update</string>
+    <string name="placeholder_extraction_title">Extraction</string>
+    <string name="placeholder_extraction_subtitle">Partition extraction and verification will be available here.</string>
+    <string name="placeholder_results_title">Export Results</string>
+    <string name="placeholder_results_subtitle">Verified artifacts and export actions will appear here.</string>
+    <string name="placeholder_incremental_title">Incremental Wizard</string>
+    <string name="placeholder_incremental_subtitle">Base image validation and prerequisite management will be available here.</string>
+    <string name="placeholder_browser_title">Filesystem Browser</string>
+    <string name="placeholder_browser_subtitle">Read-only browsing of extracted partition images will be available here.</string>
+    <string name="placeholder_settings_title">Settings</string>
+    <string name="placeholder_settings_subtitle">Theme switching, diagnostics, adapter management, and advanced options.</string>
+
+    <!-- Filesystem Browser (FR-8) -->
+    <string name="browser_title">Filesystem Browser</string>
+    <string name="browser_mounting">Mounting filesystem…</string>
+    <string name="browser_items_count">%1$d items • %2$s</string>
+    <string name="browser_empty_directory">Empty directory</string>
+    <string name="browser_navigate_to">Navigate to %1$s</string>
+    <string name="browser_open_folder">Open folder %1$s</string>
+    <string name="browser_unsupported_title">Filesystem not yet supported</string>
+    <string name="browser_unsupported_detail">Detected format: %1$s\n\nThis filesystem cannot be browsed yet, but you can export the raw partition image for use with desktop tools.</string>
+    <string name="browser_error_title">Cannot browse this filesystem</string>
+    <string name="browser_export_raw">Export Raw Image</string>
+    <string name="browser_sort_name_asc">Name (A→Z)</string>
+    <string name="browser_sort_name_desc">Name (Z→A)</string>
+    <string name="browser_sort_size_asc">Size (smallest)</string>
+    <string name="browser_sort_size_desc">Size (largest)</string>
+    <string name="browser_sort_type">Type</string>
+    <string name="browser_export_started">Exporting %1$s…</string>
+    <string name="browser_export_success">Exported %1$s (%2$s)</string>
+    <string name="browser_export_failed">Export failed: %1$s</string>
+    <string name="browser_icon_folder">Folder</string>
+    <string name="browser_icon_symlink">Symbolic link</string>
+    <string name="browser_icon_file">%1$s file</string>
+    <string name="browser_retry">Retry</string>
+    <string name="browser_browse">Browse</string>
+</resources>

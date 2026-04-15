@@ -1,0 +1,404 @@
+# Forge OTA Lab — Continuous Integration
+#
+# Triggers: PR (all branches) and push to main.
+# Target: complete in < 30 minutes via parallel job execution.
+#
+# Jobs:
+#   rust-check      — cargo check, clippy, test, fmt
+#   android-build   — lint, assembleDebug, unit tests, Room schema
+#   android-instrumented — connected tests (push to main only)
+#   binary-size-check — release APK installed size enforcement
+#   beta-gate       — manual corpus gate (workflow_dispatch)
+
+name: CI
+
+on:
+  pull_request:
+    branches: ["*"]
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      run_beta_gate:
+        description: "Run the beta-gate corpus test job"
+        required: false
+        default: "false"
+        type: boolean
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  RUST_BACKTRACE: 1
+  CARGO_TERM_COLOR: always
+  GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx4096m
+
+jobs:
+  # ===========================================================================
+  # Rust — cargo check, clippy, test, fmt
+  # ===========================================================================
+  rust-check:
+    name: Rust Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: core-extractor-rs
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core-extractor-rs -> target
+
+      - name: cargo check
+        run: cargo check --workspace --all-targets
+
+      - name: cargo clippy (-D warnings)
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: cargo test
+        run: cargo test --workspace
+
+      - name: cargo fmt --check
+        run: cargo fmt --all -- --check
+
+  # ===========================================================================
+  # Android — lint, assembleDebug, unit tests
+  # ===========================================================================
+  android-build:
+    name: Android Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install Rust toolchain + Android targets
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Add Android Rust targets
+        run: |
+          rustup target add aarch64-linux-android
+          rustup target add x86_64-linux-android
+
+      - name: Install cargo-ndk
+        run: cargo install cargo-ndk
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core-extractor-rs -> target
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      - name: Lint
+        run: ./gradlew lint
+
+      - name: Assemble Debug
+        run: ./gradlew assembleDebug
+
+      - name: Unit Tests
+        run: ./gradlew testDebugUnitTest
+
+      - name: Verify Room schema export
+        run: |
+          # Room schema JSON must exist after build — validates @AutoMigration support
+          if [ ! -d "app/schemas" ] || [ -z "$(ls -A app/schemas)" ]; then
+            echo "::error::Room schema directory is empty — schema export may be misconfigured"
+            exit 1
+          fi
+          echo "Room schemas found:"
+          ls -la app/schemas/
+
+      - name: Upload lint results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-results
+          path: app/build/reports/lint-results*.html
+          retention-days: 14
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results
+          path: app/build/reports/tests/
+          retention-days: 14
+
+  # ===========================================================================
+  # Android Instrumented Tests — push to main only
+  # ===========================================================================
+  android-instrumented:
+    name: Instrumented Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Add Android Rust targets
+        run: |
+          rustup target add aarch64-linux-android
+          rustup target add x86_64-linux-android
+
+      - name: Install cargo-ndk
+        run: cargo install cargo-ndk
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core-extractor-rs -> target
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run connected tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          disable-animations: true
+          script: ./gradlew connectedDebugAndroidTest
+
+      - name: Upload instrumented test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: instrumented-test-results
+          path: |
+            app/build/reports/androidTests/
+            app/build/outputs/androidTest-results/
+          retention-days: 30
+
+  # ===========================================================================
+  # Binary Size Check — release APK installed size
+  # ===========================================================================
+  binary-size-check:
+    name: Binary Size Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Add Android Rust targets
+        run: |
+          rustup target add aarch64-linux-android
+          rustup target add x86_64-linux-android
+
+      - name: Install cargo-ndk
+        run: cargo install cargo-ndk
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core-extractor-rs -> target
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      - name: Build release APK
+        run: ./gradlew assembleRelease
+
+      - name: Check APK size
+        run: |
+          APK_PATH=$(find app/build/outputs/apk/release -name "*.apk" | head -1)
+          if [ -z "$APK_PATH" ]; then
+            echo "::error::Release APK not found"
+            exit 1
+          fi
+
+          APK_SIZE_BYTES=$(stat -c%s "$APK_PATH")
+          APK_SIZE_MB=$((APK_SIZE_BYTES / 1048576))
+
+          echo "## Binary Size Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| APK Path | \`$(basename $APK_PATH)\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| APK Size | ${APK_SIZE_MB} MB (${APK_SIZE_BYTES} bytes) |" >> $GITHUB_STEP_SUMMARY
+
+          # Warn threshold: 45 MB (mission brief target)
+          WARN_THRESHOLD=$((45 * 1048576))
+          # Hard fail threshold: 150 MB (PRD NFR-8)
+          FAIL_THRESHOLD=$((150 * 1048576))
+
+          if [ "$APK_SIZE_BYTES" -gt "$FAIL_THRESHOLD" ]; then
+            echo "| Status | ❌ FAIL — exceeds 150 MB PRD limit |" >> $GITHUB_STEP_SUMMARY
+            echo "::error::Release APK size ${APK_SIZE_MB} MB exceeds the 150 MB PRD limit (NFR-8)"
+            exit 1
+          elif [ "$APK_SIZE_BYTES" -gt "$WARN_THRESHOLD" ]; then
+            echo "| Status | ⚠️ WARNING — exceeds 45 MB target |" >> $GITHUB_STEP_SUMMARY
+            echo "::warning::Release APK size ${APK_SIZE_MB} MB exceeds the 45 MB target"
+          else
+            echo "| Status | ✅ Within 45 MB target |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "APK_SIZE_MB=${APK_SIZE_MB}" >> $GITHUB_ENV
+
+      - name: Upload release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-apk
+          path: app/build/outputs/apk/release/*.apk
+          retention-days: 30
+
+  # ===========================================================================
+  # Beta Gate — manual trigger, corpus test enforcement
+  # ===========================================================================
+  beta-gate:
+    name: Beta Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: github.event.inputs.run_beta_gate == 'true'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Add Android Rust targets
+        run: |
+          rustup target add aarch64-linux-android
+          rustup target add x86_64-linux-android
+
+      - name: Install cargo-ndk
+        run: cargo install cargo-ndk
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core-extractor-rs -> target
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Generate corpus fixtures
+        working-directory: core-extractor-rs
+        run: cargo run -p corpus-gen
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run corpus integration tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          disable-animations: true
+          script: ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.forgeotalab.CorpusIntegrationTest
+
+      - name: Evaluate corpus pass rate
+        run: |
+          # Parse test results XML for pass rate
+          RESULTS_DIR="app/build/outputs/androidTest-results/connected"
+          if [ ! -d "$RESULTS_DIR" ]; then
+            echo "::error::No test results found"
+            exit 1
+          fi
+
+          TOTAL=0
+          PASSED=0
+          FAILED=0
+
+          for file in "$RESULTS_DIR"/*.xml; do
+            if [ -f "$file" ]; then
+              FILE_TESTS=$(grep -oP 'tests="\K[0-9]+' "$file" | head -1)
+              FILE_FAILURES=$(grep -oP 'failures="\K[0-9]+' "$file" | head -1)
+              FILE_ERRORS=$(grep -oP 'errors="\K[0-9]+' "$file" | head -1)
+              TOTAL=$((TOTAL + ${FILE_TESTS:-0}))
+              FAILED=$((FAILED + ${FILE_FAILURES:-0} + ${FILE_ERRORS:-0}))
+            fi
+          done
+
+          PASSED=$((TOTAL - FAILED))
+
+          if [ "$TOTAL" -eq 0 ]; then
+            echo "::error::No corpus tests were executed"
+            exit 1
+          fi
+
+          PASS_RATE=$(echo "scale=2; $PASSED * 100 / $TOTAL" | bc)
+
+          echo "## Beta Gate Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Total Tests | $TOTAL |" >> $GITHUB_STEP_SUMMARY
+          echo "| Passed | $PASSED |" >> $GITHUB_STEP_SUMMARY
+          echo "| Failed | $FAILED |" >> $GITHUB_STEP_SUMMARY
+          echo "| Pass Rate | ${PASS_RATE}% |" >> $GITHUB_STEP_SUMMARY
+          echo "| Required | ≥ 99.0% |" >> $GITHUB_STEP_SUMMARY
+
+          # PRD NFR-14: Supported-tier internal corpus success rate ≥ 99.0%
+          PASS_RATE_INT=$(echo "$PASS_RATE" | cut -d. -f1)
+          if [ "$PASS_RATE_INT" -lt 99 ]; then
+            echo "| Status | ❌ FAIL |" >> $GITHUB_STEP_SUMMARY
+            echo "::error::Corpus pass rate ${PASS_RATE}% is below the 99.0% threshold (PRD NFR-14)"
+            exit 1
+          else
+            echo "| Status | ✅ PASS |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload corpus results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: beta-gate-results
+          path: |
+            app/build/reports/androidTests/
+            app/build/outputs/androidTest-results/
+          retention-days: 90

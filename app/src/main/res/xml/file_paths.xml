@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    FileProvider path configuration for diagnostics bundle sharing.
+
+    WHY cache-path only: Diagnostics bundles are generated on demand into the
+    app's cache directory. No access to user files, SAF destinations, or
+    external storage is granted. This is the minimum surface needed for
+    share sheet functionality via content:// URIs.
+-->
+<paths>
+    <cache-path
+        name="diagnostics"
+        path="diagnostics/" />
+</paths>

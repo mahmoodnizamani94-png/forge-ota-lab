@@ -1,0 +1,20 @@
+[package]
+name = "corpus-gen"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+
+# WHY binary crate: This is a test-only tool that generates synthetic
+# OTA fixtures for the integration test corpus. Not shipped in production.
+
+[[bin]]
+name = "corpus-gen"
+path = "src/main.rs"
+
+[dependencies]
+forge-payload = { path = "../crates/payload" }
+forge-sniff = { path = "../crates/sniff" }
+forge-verification = { path = "../crates/verification" }
+prost = { workspace = true }
+sha2 = { workspace = true }
+zip = { workspace = true, features = ["deflate"] }

@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- ================================================================
+         Permissions — from PRD §Permissions, Policy, and Privacy
+         ================================================================ -->
+
+    <!-- Keep extraction running when app is backgrounded -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+
+    <!-- Prevent CPU sleep during active extraction -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!-- Extraction progress notification — requested at runtime on API 33+ -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- Network access for adapter manifest refresh — PRD: "network is optional" -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application
+        android:name=".ForgeApplication"
+        android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.ForgeOTALab"
+        tools:targetApi="35">
+
+        <!-- ================================================================
+             Firebase Crashlytics — disabled by default per PRD §Permissions.
+             WHY meta-data: This disables Crashlytics auto-init at the
+             ContentProvider level (before Application.onCreate). The
+             CrashReportingManager then re-confirms disabled state and
+             enables collection ONLY when user consent is given.
+             ================================================================ -->
+        <meta-data
+            android:name="firebase_crashlytics_collection_enabled"
+            android:value="false" />
+
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.ForgeOTALab">
+
+            <!-- Standard launcher entry -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- ================================================================
+                 Share intent receiver — handles files shared from file managers
+                 PRD: "share intent" as an import mechanism
+                 ================================================================ -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/zip" />
+                <data android:mimeType="application/octet-stream" />
+            </intent-filter>
+
+            <!-- ================================================================
+                 "Open with" handler — opens .zip and .bin files directly
+                 PRD: '"open with" handler for .zip, .bin file extensions'
+                 ================================================================ -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="content" />
+                <data android:mimeType="application/zip" />
+                <data android:mimeType="application/octet-stream" />
+            </intent-filter>
+
+            <!-- File extension-based matching for content URIs -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="content" />
+                <data android:host="*" />
+                <data android:pathPattern=".*\\.zip" />
+                <data android:pathPattern=".*\\.bin" />
+            </intent-filter>
+        </activity>
+
+        <!-- ================================================================
+             FileProvider for diagnostics bundle sharing.
+             WHY: PRD requires sharing diagnostics via standard Android share
+             sheet. FileProvider generates content:// URIs — never file:// URIs.
+             Authority uses applicationId to avoid provider conflicts.
+             ================================================================ -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+        <!-- ================================================================
+             WorkManager foreground service for extraction operations.
+             WHY declared explicitly: API 34+ requires foregroundServiceType
+             on the service element. WorkManager creates SystemForegroundService
+             internally — we declare it here to set the correct type.
+             ================================================================ -->
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:foregroundServiceType="dataSync"
+            android:exported="false" />
+
+        <!-- ================================================================
+             Disable default WorkManager initializer.
+             WHY: We use Hilt's HiltWorkerFactory for dependency injection
+             into workers. The default initializer would use a factory that
+             can't inject DAO/repository dependencies.
+             ================================================================ -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup"
+                tools:node="remove" />
+        </provider>
+    </application>
+
+</manifest>

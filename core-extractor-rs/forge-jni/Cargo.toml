@@ -1,0 +1,30 @@
+[package]
+name = "forge-jni"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[features]
+# WHY: Enables a JNI function that deliberately panics inside catch_unwind.
+# Used by NativeBridgePanicContainmentTest to verify panic isolation.
+# NEVER enabled in release builds — debug/test only.
+test-panic = []
+
+[dependencies]
+# JNI bridge — the only crate with unsafe JNI boundary code
+jni = "0.21"
+
+# JSON serialization for JNI results
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Workspace crates
+forge-sniff = { path = "../crates/sniff" }
+forge-payload = { path = "../crates/payload" }
+forge-images = { path = "../crates/images" }
+forge-filesystems = { path = "../crates/filesystems" }
+forge-verification = { path = "../crates/verification" }
+forge-adapters = { path = "../crates/adapters" }
