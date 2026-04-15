@@ -1,0 +1,11 @@
+# Cargo config for Android cross-compilation.
+#
+# WHY debuginfo=1: Full debug info (level 2) causes linker errors with
+# NDK 26's ld.lld on Windows ("offset is outside the section"). Level 1
+# gives line tables only — sufficient for backtraces, avoids the bug.
+
+[profile.dev]
+debug = 1
+
+[profile.dev.package."*"]
+debug = 1

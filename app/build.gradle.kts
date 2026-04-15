@@ -9,9 +9,20 @@ plugins {
     alias(libs.plugins.firebase.crashlytics)
 }
 
+// Google Services plugin requires google-services.json. When the file is
+// missing (development builds without Firebase), disable the task instead
+// of failing the build. The app works identically without it —
+// CrashReportingManager.initialize() catches all Firebase exceptions.
+if (!file("google-services.json").exists()) {
+    tasks.matching { it.name.contains("GoogleServices") }.configureEach {
+        enabled = false
+    }
+}
+
 android {
     namespace = "dev.forgeotalab"
     compileSdk = 35
+    ndkVersion = "26.1.10909125"
 
     // Release signing — properties loaded from ~/.gradle/gradle.properties
     // or CI environment. NEVER check keystore into source control.
@@ -76,6 +87,9 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            // Resolve BouncyCastle vs jspecify OSGI manifest conflict.
+            // These are JAR metadata files not needed on Android at runtime.
+            excludes += "META-INF/versions/9/OSGI-INF/MANIFEST.MF"
         }
     }
 }

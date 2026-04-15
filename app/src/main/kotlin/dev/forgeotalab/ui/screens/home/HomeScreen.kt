@@ -433,7 +433,7 @@ private fun SwipeToDeleteHistoryCard(
                 modifier = Modifier
                     .fillMaxSize()
                     .clip(RoundedCornerShape(12.dp))
-                    .background(colors.statusError),
+                    .background(colors.feedbackErrorIcon),
                 contentAlignment = Alignment.CenterEnd,
             ) {
                 Icon(

@@ -81,6 +81,9 @@ class StartExtractionUseCase @Inject constructor(
             is PreflightResult.SystemError -> {
                 return StartExtractionResult.PreflightFailed(preflightResult)
             }
+            is PreflightResult.IncrementalPrerequisitesUnmet -> {
+                return StartExtractionResult.PreflightFailed(preflightResult)
+            }
         }
 
         // Step 3: Create job entity

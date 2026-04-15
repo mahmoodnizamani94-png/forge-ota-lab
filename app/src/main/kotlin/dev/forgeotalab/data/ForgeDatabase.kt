@@ -1,6 +1,5 @@
 package dev.forgeotalab.data
 
-import androidx.room.AutoMigration
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
@@ -33,9 +32,8 @@ import dev.forgeotalab.data.entity.SettingsEntity
  * additive migrations during beta. Schema JSON is exported to app/schemas/
  * for migration verification and diff review.
  *
- * WHY version 3: Added interruptedAt, resumeCount, lastResumedAt columns
- * to JobEntity for FR-9 (job persistence and resume). All changes are
- * additive with defaults — AutoMigration handles the schema update.
+ * WHY version 1: Pre-release — no shipped versions exist to migrate from.
+ * Auto-migrations will be added when the schema evolves post-release.
  * Destructive migration is prohibited after public beta.
  */
 @Database(
@@ -51,12 +49,8 @@ import dev.forgeotalab.data.entity.SettingsEntity
         SettingsEntity::class,
         ConsentRecordEntity::class,
     ],
-    version = 3,
+    version = 1,
     exportSchema = true,
-    autoMigrations = [
-        AutoMigration(from = 1, to = 2),
-        AutoMigration(from = 2, to = 3),
-    ],
 )
 @TypeConverters(ForgeTypeConverters::class)
 abstract class ForgeDatabase : RoomDatabase() {

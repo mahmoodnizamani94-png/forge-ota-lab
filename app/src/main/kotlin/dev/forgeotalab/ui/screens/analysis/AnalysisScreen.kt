@@ -416,7 +416,7 @@ private fun AnalysisContent(
 private fun AnalysisContentCompact(
     data: AnalysisScreenData,
     selectedPartitions: Set<String>,
-    storageEstimate: StorageEstimate?,
+    storageEstimate: dev.forgeotalab.contracts.model.StorageEstimate?,
     onTogglePartition: (String) -> Unit,
     onApplyBootPreset: () -> Unit,
     onApplySystemPreset: () -> Unit,
@@ -451,10 +451,10 @@ private fun AnalysisContentCompact(
             )
         }
 
-        storageEstimate?.let { estimate ->
+        if (storageEstimate != null) {
             item(key = "storage") {
                 StorageEstimateBar(
-                    estimate = estimate,
+                    estimate = storageEstimate,
                     selectedCount = selectedPartitions.size,
                 )
             }
