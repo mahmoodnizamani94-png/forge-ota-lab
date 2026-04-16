@@ -54,3 +54,9 @@ google-services.json
 
 # Crash logs
 hs_err_pid*
+
+# Agent/AI development files — local only, not for public repo
+.agents/
+prd/
+AGENTS.md
+docs/status/

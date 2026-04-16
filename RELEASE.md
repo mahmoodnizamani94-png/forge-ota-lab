@@ -1,6 +1,6 @@
 # Forge OTA Lab — Release Operations Manual
 
-This document covers everything a release manager needs to ship a closed beta APK to Google Play without asking a developer any questions.
+This document covers everything a release manager needs to ship Forge OTA Lab to Google Play.
 
 ---
 
@@ -125,14 +125,14 @@ Push a version tag to trigger the release workflow:
 ```bash
 # 1. Update version in app/build.gradle.kts
 #    versionCode = <incremented integer>
-#    versionName = "0.1.0"
+#    versionName = "1.0.0"
 
 # 2. Commit the version bump
 git add app/build.gradle.kts
-git commit -m "chore: bump version to 0.1.0"
+git commit -m "chore: bump version to 1.0.0"
 
 # 3. Tag and push
-git tag v0.1.0
+git tag v1.0.0
 git push origin main --tags
 ```
 
@@ -152,20 +152,17 @@ The `release.yml` workflow will:
 2. Set up store listing using content from `store/listing.md`
 3. Complete content rating questionnaire (see `store/listing.md` content rating notes)
 4. Set up privacy policy URL: `https://forgeotalab.dev/privacy`
-5. Enable closed beta track under **Testing → Closed testing**
-6. Create a testers list and add beta testers
+5. Create a production track release
+6. Upload your signing key or use Play App Signing
 
 ### Upload Process
 
 1. Download the AAB from the GitHub Release page
-2. In Play Console → **Testing → Closed testing → Manage track**
-3. Click **Create new release**
-4. Upload the `.aab` file
-5. Add release notes from `store/release-notes/<version>.md`
-6. Set rollout percentage:
-   - Closed beta: 100% of testers
-   - Public beta: start at 10%, increase per rollout controls
-7. Review and submit
+2. In Play Console → **Production** → **Create new release**
+3. Upload the `.aab` file
+4. Add release notes from `store/release-notes/1.0.0.md`
+5. Set rollout percentage (start at 20%, increase after monitoring)
+6. Review and submit
 
 > **NOTE:** APK is for direct distribution (GitHub, sideloading). AAB is for Play Store. Always upload AAB to Play.
 
@@ -173,7 +170,7 @@ The `release.yml` workflow will:
 
 ## Direct APK Distribution
 
-For users outside the Play Store beta:
+For users outside the Play Store:
 
 1. Download the signed release APK from the GitHub Release page
 2. Host at the distribution site
@@ -307,4 +304,5 @@ If the issue is in app-level code (not adapter-specific):
 
 | Version | Date | Type | Notes |
 |---------|------|------|-------|
-| 0.1.0 | — | Closed Beta | Initial release. See `store/release-notes/0.1.0.md`. |
+| 1.0.0 | 2026-04-16 | Stable | First stable release. Full extraction, verification, filesystem browse. |
+| 0.1.0 | — | Closed Beta | Initial pre-release. |

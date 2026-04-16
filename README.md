@@ -2,8 +2,6 @@
 
 **Android OTA Extraction Workbench** — a local-first, on-device tool for importing Android OTA update packages, classifying them by support tier, extracting verifiable partition images, and exporting artifacts.
 
-> ⚠️ **v0.1.0 Closed Beta** — This is a pre-release build. Expect rough edges. Report issues via GitHub Issues.
-
 ---
 
 ## What It Does
@@ -204,8 +202,8 @@ These are explicit non-goals for v1:
 
 ## Contributing
 
-This is currently a closed-source project in closed beta. If you're interested in contributing, open an issue to discuss.
+Contributions are welcome! Please open an issue to discuss before submitting a pull request.
 
 ## License
 
-All rights reserved. See [LICENSE](LICENSE) for details.
+MIT License — see [LICENSE](LICENSE) for details.
